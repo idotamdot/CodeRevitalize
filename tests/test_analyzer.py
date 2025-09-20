@@ -89,5 +89,30 @@ def edge_complexity_function(a, b):
         self.assertEqual(len(complexity_findings), 1)
         self.assertEqual(complexity_findings[0]['value'], 2)
 
+    def test_function_length_long(self):
+        # This function is 5 lines long from def to last statement
+        code = '''
+def long_function():
+    a = 1
+    b = 2
+    c = 3
+    d = 4
+'''
+        findings = analyze_code(code, max_lines=4)
+        length_findings = [f for f in findings if f['type'] == 'function_length']
+        self.assertEqual(len(length_findings), 1)
+        self.assertEqual(length_findings[0]['function_name'], 'long_function')
+        self.assertEqual(length_findings[0]['value'], 5)
+
+    def test_function_length_ok(self):
+        code = '''
+def ok_function():
+    a = 1
+'''
+        findings = analyze_code(code, max_lines=5)
+        length_findings = [f for f in findings if f['type'] == 'function_length']
+        self.assertEqual(len(length_findings), 0)
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -34,6 +34,29 @@ class ArgumentCountAnalyzer(ast.NodeVisitor):
             })
         self.generic_visit(node)
 
+class FunctionLengthAnalyzer(ast.NodeVisitor):
+    """
+    Analyzes Python source code to find functions that are too long.
+    """
+
+    def __init__(self, max_lines=50):
+        self.max_lines = max_lines
+        self.findings = []
+
+    def visit_FunctionDef(self, node):
+        # This requires Python 3.8+ for end_lineno
+        if hasattr(node, 'end_lineno'):
+            num_lines = node.end_lineno - node.lineno + 1
+            if num_lines > self.max_lines:
+                self.findings.append({
+                    "type": "function_length",
+                    "function_name": node.name,
+                    "line_number": node.lineno,
+                    "value": num_lines,
+                    "message": f"Function '{node.name}' has {num_lines} lines, which is more than the allowed {self.max_lines}."
+                })
+        self.generic_visit(node)
+
 def analyze_complexity(source_code, max_complexity=10):
     """
     Analyzes the given source code for cyclomatic complexity.
@@ -55,18 +78,24 @@ def analyze_complexity(source_code, max_complexity=10):
         pass
     return findings
 
-def analyze_code(source_code, max_args=5, max_complexity=10):
+def analyze_code(source_code, max_args=5, max_complexity=10, max_lines=50):
     """
     Analyzes the given source code for various issues and returns a list of findings.
     """
     all_findings = []
 
-    # Argument count analysis
+    # AST-based analysis (argument count, function length)
     try:
         tree = ast.parse(source_code)
+
         arg_analyzer = ArgumentCountAnalyzer(max_args=max_args)
         arg_analyzer.visit(tree)
         all_findings.extend(arg_analyzer.findings)
+
+        length_analyzer = FunctionLengthAnalyzer(max_lines=max_lines)
+        length_analyzer.visit(tree)
+        all_findings.extend(length_analyzer.findings)
+
     except SyntaxError as e:
         all_findings.append({
             "type": "syntax_error",
