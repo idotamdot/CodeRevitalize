@@ -8,10 +8,10 @@ from coderevitalize.formatters import get_formatter
 def main():
     parser = argparse.ArgumentParser(description="Analyze Python code for 'aged' or inefficient patterns.")
     parser.add_argument("path", help="Path to the Python file or directory to analyze.")
-    parser.add_argument("--max-args", type=int, default=5, help="The maximum number of arguments a function can have.")
-    parser.add_argument("--max-complexity", type=int, default=10, help="The maximum cyclomatic complexity a function can have.")
-    parser.add_argument("--max-lines", type=int, default=50, help="The maximum number of lines a function can have.")
-    parser.add_argument("--format", choices=['text', 'json'], default='text', help="The output format.")
+    parser.add_argument("--max-args", type=int, default=5, help="The maximum number of arguments a function can have. (default: 5)")
+    parser.add_argument("--max-complexity", type=int, default=10, help="The maximum cyclomatic complexity a function can have. (default: 10)")
+    parser.add_argument("--max-lines", type=int, default=50, help="The maximum number of lines a function can have. (default: 50)")
+    parser.add_argument("--format", choices=['text', 'json'], default='text', help="The output format. (default: text)")
     args = parser.parse_args()
 
     if not os.path.exists(args.path):
