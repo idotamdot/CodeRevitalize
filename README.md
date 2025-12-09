@@ -1,207 +1,122 @@
-"# CodeRevitalize
+# CodeRevitalize
 
-A comprehensive Python code analysis tool that identifies "aged" or inefficient patterns in your codebase. CodeRevitalize helps you maintain code quality by detecting various issues and providing actionable insights to improve your Python projects.
+A tool to analyze, explain, and write code, helping you identify and improve code quality.
 
 ## Features
 
-- **Function Analysis**: Detect functions with too many arguments, excessive length, or high cyclomatic complexity
-- **Code Quality Checks**: Identify unused imports, missing docstrings, magic numbers, and TODO/FIXME comments
-- **Flexible Configuration**: Customize thresholds and rules via command-line options or configuration files
-- **Multiple Output Formats**: Choose between human-readable text output or structured JSON for integration
-- **Directory Scanning**: Analyze entire projects or individual files
-- **Severity Levels**: Prioritize fixes with severity-based reporting
+- **Analyze Code**: Detects "aged" or inefficient patterns in Python code.
+- **Explain Code**: Uses AI to explain code in any programming language.
+- **Write Code**: Generates new code from a natural language description.
 
 ## Installation
 
 ### From Source
+
 ```bash
 git clone https://github.com/idotamdot/CodeRevitalize.git
 cd CodeRevitalize
 pip install -e .
 ```
 
-### Using pip (when published)
+### Dependencies
+
+- Python 3.6+
+- radon (for complexity analysis)
+- openai
+
+## Usage
+
+### Command Line Interface
+
+#### Analyzing Code
+
+Analyze a single Python file:
 ```bash
-pip install coderevitalize
+coderevitalize analyze path/to/your/file.py
 ```
 
-## Quick Start
-
-### Analyze a single file
+Analyze an entire directory:
 ```bash
-coderevitalize path/to/your/file.py
+coderevitalize analyze path/to/your/project/
 ```
 
-### Analyze an entire project
+**Configuration Options:**
+
+- `--max-args`: Maximum number of function arguments allowed (default: 5)
+- `--max-complexity`: Maximum cyclomatic complexity allowed (default: 10)  
+- `--max-lines`: Maximum number of lines per function (default: 50)
+- `--format`: Output format - 'text' or 'json' (default: text)
+
+#### Explaining Code
+
+Explain a source file:
 ```bash
-coderevitalize path/to/your/project/
+coderevitalize explain path/to/your/file.py --language "JavaScript"
 ```
 
-### Customize thresholds
+#### Writing Code
+
+Generate a new script:
 ```bash
-coderevitalize src/ --max-args 3 --max-complexity 8 --max-lines 30
+coderevitalize write "create a hello world script in Python" --output "hello_world.py"
 ```
 
-### Get JSON output for integration
+### Examples
+
 ```bash
-coderevitalize src/ --format json > analysis_results.json
+# Use stricter limits for analysis
+coderevitalize analyze mycode.py --max-args 3 --max-complexity 5 --max-lines 20
+
+# Get JSON output for integration with other tools
+coderevitalize analyze myproject/ --format json
 ```
 
-## Example Output
+## Exit Codes
 
-### Text Format
+- `0`: No issues found
+- `1`: Issues found in the analyzed code
+
+## API Usage
+
+You can also use CodeRevitalize as a Python library:
+
+```python
+from coderevitalize.analyzer import analyze_code
+
+# Analyze some source code
+source_code = """
+def example_function(a, b, c, d, e, f):
+    if a > b:
+        if c > d:
+            return e + f
+    return 0
+"""
+
+findings = analyze_code(source_code, max_args=4, max_complexity=5, max_lines=10)
+for finding in findings:
+    print(f"{finding['type']}: {finding['message']}")
 ```
---- Findings in src/example.py ---
-  Line 15: [HIGH] Function 'process_data' has 8 arguments, which is more than the allowed 5.
-  Line 42: [MEDIUM] Function 'calculate_metrics' has 65 lines, which is more than the allowed 50.
-  Line 3: [LOW] Missing docstring for function 'helper_function'.
-  Line 28: [LOW] Magic number 42 found. Consider using a named constant.
----------------------------------
-
-Summary: 4 issues found (1 high, 1 medium, 2 low severity)
-```
-
-### JSON Format
-```json
-{
-  "src/example.py": [
-    {
-      "type": "argument_count",
-      "function_name": "process_data",
-      "line_number": 15,
-      "value": 8,
-      "severity": "high",
-      "message": "Function 'process_data' has 8 arguments, which is more than the allowed 5.",
-      "suggestion": "Consider grouping related parameters into a class or dictionary."
-    }
-  ]
-}
-```
-
-## Configuration
-
-### Command Line Options
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `--max-args` | 5 | Maximum number of function arguments |
-| `--max-complexity` | 10 | Maximum cyclomatic complexity |
-| `--max-lines` | 50 | Maximum function length in lines |
-| `--format` | text | Output format (text or json) |
-| `--config` | None | Path to configuration file |
-| `--exclude` | None | File patterns to exclude |
-| `--include` | "*.py" | File patterns to include |
-
-### Configuration File
-
-Create a `.coderevitalize.yaml` file in your project root:
-
-```yaml
-# Analysis thresholds
-max_args: 5
-max_complexity: 10
-max_lines: 50
-
-# File patterns
-include: ["*.py"]
-exclude: 
-  - "*/migrations/*"
-  - "*/venv/*"
-  - "*/node_modules/*"
-  - "*_test.py"
-
-# Quality checks
-checks:
-  unused_imports: true
-  missing_docstrings: true
-  magic_numbers: true
-  todo_comments: true
-
-# Severity levels
-severity:
-  argument_count: high
-  complexity: high
-  function_length: medium
-  unused_imports: low
-  missing_docstrings: low
-  magic_numbers: low
-  todo_comments: info
-```
-
-## Detected Issues
-
-### Function Quality
-- **Too Many Arguments**: Functions with excessive parameters are hard to use and test
-- **Long Functions**: Large functions are difficult to understand and maintain
-- **High Complexity**: Complex functions with many decision points are error-prone
-
-### Code Quality
-- **Unused Imports**: Dead code that should be removed
-- **Missing Docstrings**: Functions without documentation
-- **Magic Numbers**: Hardcoded values that should be named constants
-- **TODO/FIXME Comments**: Incomplete work that needs attention
-
-## Integration
-
-### CI/CD Pipeline
-```yaml
-# GitHub Actions example
-- name: Code Quality Analysis
-  run: |
-    pip install coderevitalize
-    coderevitalize src/ --format json > analysis.json
-    # Fail build if high severity issues found
-    python scripts/check_analysis.py analysis.json
-```
-
-### Pre-commit Hook
-```yaml
-# .pre-commit-config.yaml
-repos:
-  - repo: local
-    hooks:
-      - id: coderevitalize
-        name: CodeRevitalize Analysis
-        entry: coderevitalize
-        language: system
-        args: [--max-args=4, --max-complexity=8]
-```
-
-## Development
-
-### Running Tests
-```bash
-python -m unittest discover tests/ -v
-```
-
-### Adding New Analyzers
-1. Create a new analyzer class in `src/coderevitalize/analyzer.py`
-2. Implement the `ast.NodeVisitor` pattern
-3. Add corresponding tests in `tests/test_analyzer.py`
-4. Update the `analyze_code` function to include your analyzer
 
 ## Contributing
 
 1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes with tests
-4. Run the test suite (`python -m unittest discover tests/`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
+2. Create a feature branch
+3. Make your changes
+4. Run the tests: `python -m unittest discover tests`
+5. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License
 
-## Why CodeRevitalize?
+## Development
 
-Modern software development moves fast, and code quality can degrade over time. CodeRevitalize helps you:
+To run tests:
+```bash
+python -m unittest discover tests -v
+```
 
-- **Maintain Consistency**: Enforce coding standards across your team
-- **Reduce Technical Debt**: Identify problematic patterns before they become legacy issues
-- **Improve Readability**: Ensure code is easy to understand and maintain
-- **Enhance Testability**: Promote better function design and lower complexity
-- **Save Review Time**: Automate quality checks that would otherwise be manual
-
-Think of CodeRevitalize as your code's health check-up tool - helping you keep your Python projects clean, maintainable, and efficient." 
+To install in development mode:
+```bash
+pip install -e .
+```

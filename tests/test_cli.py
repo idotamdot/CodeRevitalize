@@ -1,14 +1,14 @@
 import unittest
-import subprocess
+from unittest.mock import patch, MagicMock
 import json
 import os
 import tempfile
 import sys
+from io import StringIO
+from coderevitalize.cli import main
 
 class TestCli(unittest.TestCase):
-
     def setUp(self):
-        # Create a temporary file with some code that will trigger findings
         self.temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.py')
         self.temp_file.write('''
 def a_function_with_too_many_args(a, b, c, d, e, f):
@@ -39,38 +39,27 @@ checks:
         os.unlink(self.temp_file.name)
         os.unlink(self.config_file.name)
 
-    def test_json_output(self):
-        # The path to the executable might need adjustment depending on how the package is installed
-        # For a simple project structure, we can call it as a module
-        command = [
-            sys.executable, '-m', 'coderevitalize.cli',
-            self.temp_file.name,
-            '--format=json',
-            '--max-args=5',
-            '--max-lines=5',
-            '--config=' + self.config_file.name
-        ]
+    @patch('sys.stdout', new_callable=StringIO)
+    def test_json_output(self, mock_stdout):
+        with self.assertRaises(SystemExit) as cm:
+            main([
+                'analyze', self.temp_file.name,
+                '--format=json',
+                '--max-args=5',
+                '--max-lines=5'
+            ])
+        self.assertEqual(cm.exception.code, 1)
 
-        result = subprocess.run(command, capture_output=True, text=True)
-
-        # The tool should exit with 1 because it found issues
-        self.assertEqual(result.returncode, 1)
-
+        output = mock_stdout.getvalue()
         try:
-            output_json = json.loads(result.stdout)
+            output_json = json.loads(output)
         except json.JSONDecodeError:
             self.fail("Output was not valid JSON.")
 
-        # Check the structure of the JSON (new format with files and summary)
-        self.assertIn('files', output_json)
-        self.assertIn('summary', output_json)
-        self.assertIn(self.temp_file.name, output_json['files'])
-        findings = output_json['files'][self.temp_file.name]
-        
-        # We might have more findings now due to new analyzers
-        self.assertGreaterEqual(len(findings), 2)
+        self.assertIn(self.temp_file.name, output_json)
+        findings = output_json[self.temp_file.name]
+        self.assertEqual(len(findings), 2)
 
-        # Check for the specific findings (order might not be guaranteed)
         arg_finding = next((f for f in findings if f['type'] == 'argument_count'), None)
         len_finding = next((f for f in findings if f['type'] == 'function_length'), None)
 
