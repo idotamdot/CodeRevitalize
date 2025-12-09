@@ -1,5 +1,6 @@
 import ast
 from radon.visitors import ComplexityVisitor
+from .ai import get_ai_response
 
 class ArgumentCountAnalyzer(ast.NodeVisitor):
     """
@@ -111,3 +112,10 @@ def analyze_code(source_code, max_args=5, max_complexity=10, max_lines=50):
     all_findings.extend(analyze_complexity(source_code, max_complexity))
 
     return all_findings
+
+def explain_code(source_code, language="Python"):
+    """
+    Uses an AI to explain the given source code.
+    """
+    prompt = f"Explain the following {language} code:\n\n```{language.lower()}\n{source_code}\n```"
+    return get_ai_response(prompt)
