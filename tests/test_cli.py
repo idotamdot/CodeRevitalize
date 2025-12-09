@@ -23,9 +23,21 @@ def another_long_function():
     f = 6
 ''')
         self.temp_file.close()
+        
+        # Create a config file that disables new analyzers for backward compatibility
+        self.config_file = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.yaml')
+        self.config_file.write('''
+checks:
+  unused_imports: false
+  missing_docstrings: false
+  magic_numbers: false
+  todo_comments: false
+''')
+        self.config_file.close()
 
     def tearDown(self):
         os.unlink(self.temp_file.name)
+        os.unlink(self.config_file.name)
 
     @patch('sys.stdout', new_callable=StringIO)
     def test_json_output(self, mock_stdout):
@@ -58,6 +70,13 @@ def another_long_function():
         self.assertIsNotNone(len_finding)
         self.assertEqual(len_finding['function_name'], 'another_long_function')
         self.assertEqual(len_finding['value'], 7)
+        
+        # Check summary structure
+        summary = output_json['summary']
+        self.assertIn('total_issues', summary)
+        self.assertIn('by_severity', summary)
+        self.assertIn('by_type', summary)
+        self.assertGreaterEqual(summary['total_issues'], 2)
 
 if __name__ == '__main__':
     unittest.main()

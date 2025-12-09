@@ -1,10 +1,31 @@
 import argparse
 import os
 import sys
+import fnmatch
 
 from coderevitalize.analyzer import analyze_code, explain_code
 from coderevitalize.ai import get_ai_response
 from coderevitalize.formatters import get_formatter
+from coderevitalize.config import Config
+
+
+def should_include_file(filepath, include_patterns, exclude_patterns):
+    """Check if a file should be included based on include/exclude patterns."""
+    filename = os.path.basename(filepath)
+    relative_path = filepath
+    
+    # Check exclude patterns first
+    for pattern in exclude_patterns:
+        if fnmatch.fnmatch(relative_path, pattern) or fnmatch.fnmatch(filename, pattern):
+            return False
+    
+    # Check include patterns
+    for pattern in include_patterns:
+        if fnmatch.fnmatch(relative_path, pattern) or fnmatch.fnmatch(filename, pattern):
+            return True
+    
+    return False
+
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Analyze, explain, and write Python code.")
@@ -44,20 +65,40 @@ def handle_analyze(args):
         sys.exit(1)
 
     all_findings = {}
+    files_processed = 0
 
     if os.path.isfile(args.path):
-        filepath = args.path
-        findings = process_file(filepath, args.max_args, args.max_complexity, args.max_lines)
-        if findings:
-            all_findings[filepath] = findings
+        if should_include_file(args.path, include_patterns, exclude_patterns):
+            filepath = args.path
+            findings = process_file(filepath, config)
+            if findings:
+                all_findings[filepath] = findings
+            files_processed = 1
+        else:
+            print(f"File '{args.path}' excluded by patterns.", file=sys.stderr)
+            sys.exit(0)
     elif os.path.isdir(args.path):
         for root, _, files in os.walk(args.path):
             for file in files:
                 if file.endswith(".py"):
                     filepath = os.path.join(root, file)
-                    findings = process_file(filepath, args.max_args, args.max_complexity, args.max_lines)
-                    if findings:
-                        all_findings[filepath] = findings
+                    relative_path = os.path.relpath(filepath, args.path)
+                    
+                    if should_include_file(relative_path, include_patterns, exclude_patterns):
+                        findings = process_file(filepath, config)
+                        if findings:
+                            all_findings[filepath] = findings
+                        files_processed += 1
+
+    if files_processed == 0:
+        print("No Python files found to analyze.", file=sys.stderr)
+        sys.exit(0)
+
+    # Disable colors if requested
+    if args.no_color:
+        from coderevitalize.formatters import TextFormatter
+        TextFormatter.SEVERITY_COLORS = {k: '' for k in TextFormatter.SEVERITY_COLORS}
+        TextFormatter.RESET_COLOR = ''
 
     formatter = get_formatter(args.format)
     formatter.display(all_findings)
@@ -103,12 +144,7 @@ def process_file(filepath, max_args, max_complexity, max_lines):
         with open(filepath, "r", encoding="utf-8") as f:
             source_code = f.read()
 
-        return analyze_code(
-            source_code,
-            max_args=max_args,
-            max_complexity=max_complexity,
-            max_lines=max_lines
-        )
+        return analyze_code(source_code, config=config)
     except Exception as e:
         print(f"Error processing file {filepath}: {e}", file=sys.stderr)
         return []
