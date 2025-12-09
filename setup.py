@@ -12,6 +12,7 @@ setup(
     },
     install_requires=[
         'radon==6.0.1',
+        'openai',
     ],
     author='Jules',
     author_email='jules@example.com',

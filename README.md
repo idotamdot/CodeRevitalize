@@ -1,14 +1,12 @@
-"# CodeRevitalize
+# CodeRevitalize
 
-A Python tool to analyze code for "aged" or inefficient patterns, helping you identify and improve code quality.
+A tool to analyze, explain, and write code, helping you identify and improve code quality.
 
 ## Features
 
-CodeRevitalize analyzes Python source code to detect:
-
-- **Too Many Arguments**: Functions with excessive parameters that may be hard to maintain
-- **Long Functions**: Functions that are too lengthy and should be broken down  
-- **High Cyclomatic Complexity**: Functions with complex control flow that are difficult to understand and test
+- **Analyze Code**: Detects "aged" or inefficient patterns in Python code.
+- **Explain Code**: Uses AI to explain code in any programming language.
+- **Write Code**: Generates high-quality, production-ready code from a natural language description.
 
 ## Installation
 
@@ -24,72 +22,53 @@ pip install -e .
 
 - Python 3.6+
 - radon (for complexity analysis)
+- openai
 
 ## Usage
 
 ### Command Line Interface
 
+#### Analyzing Code
+
 Analyze a single Python file:
 ```bash
-coderevitalize path/to/your/file.py
+coderevitalize analyze path/to/your/file.py
 ```
 
 Analyze an entire directory:
 ```bash
-coderevitalize path/to/your/project/
+coderevitalize analyze path/to/your/project/
 ```
 
-### Configuration Options
+**Configuration Options:**
 
 - `--max-args`: Maximum number of function arguments allowed (default: 5)
 - `--max-complexity`: Maximum cyclomatic complexity allowed (default: 10)  
 - `--max-lines`: Maximum number of lines per function (default: 50)
 - `--format`: Output format - 'text' or 'json' (default: text)
 
+#### Explaining Code
+
+Explain a source file:
+```bash
+coderevitalize explain path/to/your/file.py --language "JavaScript"
+```
+
+#### Writing Code
+
+Generate a new script:
+```bash
+coderevitalize write "create a hello world script in Python" --output "hello_world.py"
+```
+
 ### Examples
 
 ```bash
-# Use stricter limits
-coderevitalize mycode.py --max-args 3 --max-complexity 5 --max-lines 20
+# Use stricter limits for analysis
+coderevitalize analyze mycode.py --max-args 3 --max-complexity 5 --max-lines 20
 
 # Get JSON output for integration with other tools
-coderevitalize myproject/ --format json
-
-# Analyze with custom thresholds
-coderevitalize src/ --max-args 4 --max-complexity 8 --max-lines 30
-```
-
-### Sample Output
-
-Text format:
-```
---- Findings in example.py ---
-  Line 10: Function 'process_data' has 6 arguments, which is more than the allowed 5.
-  Line 25: Function 'complex_algorithm' has a cyclomatic complexity of 12, which is more than the allowed 10.
-  Line 50: Function 'long_function' has 55 lines, which is more than the allowed 50.
---------------------------------
-```
-
-JSON format:
-```json
-{
-  "example.py": [
-    {
-      "type": "argument_count",
-      "function_name": "process_data", 
-      "line_number": 10,
-      "value": 6,
-      "message": "Function 'process_data' has 6 arguments, which is more than the allowed 5."
-    },
-    {
-      "type": "complexity",
-      "function_name": "complex_algorithm",
-      "line_number": 25, 
-      "value": 12,
-      "message": "Function 'complex_algorithm' has a cyclomatic complexity of 12, which is more than the allowed 10."
-    }
-  ]
-}
+coderevitalize analyze myproject/ --format json
 ```
 
 ## Exit Codes
@@ -140,4 +119,4 @@ python -m unittest discover tests -v
 To install in development mode:
 ```bash
 pip install -e .
-```" 
+```
